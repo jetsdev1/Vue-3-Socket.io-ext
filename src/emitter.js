@@ -2,7 +2,7 @@ import CryptoJS from "crypto-js";
 import Logger from "./logger";
 
 export default class EventEmitter {
-  constructor(vuex = {}, secret) {
+  constructor(vuex = {}, secret, encryptedKey) {
     Logger.info(vuex ? `Vuex adapter enabled` : `Vuex adapter disabled`);
     Logger.info(
       vuex.mutationPrefix
@@ -17,6 +17,7 @@ export default class EventEmitter {
     this.mutationPrefix = vuex.mutationPrefix;
     this.listeners = new Map();
     this.secret = secret;
+    this.encryptedKey = encryptedKey;
   }
 
   /**
@@ -67,12 +68,12 @@ export default class EventEmitter {
   emit(event, args) {
     if (this.listeners.has(event)) {
       if (this.secret !== undefined) {
-        if (
-          args !== undefined &&
-          typeof args === "object" &&
-          Object.hasOwn(args, "msg")
-        ) {
-          args = this._decrypt(args.msg);
+        if (args !== undefined && typeof args === "object") {
+          this._validateRequest(args);
+
+          if (Object.hasOwn(args, this.encryptedKey)) {
+            args = this._decrypt(args.msg);
+          }
         }
 
         Logger.info(`Encrypted Broadcasting: #${event}, Data:`, args);
@@ -116,13 +117,25 @@ export default class EventEmitter {
           let mutation = key.split("/").pop();
 
           if (mutation === prefixed_event) {
-            Logger.info(`Commiting Mutation: ${key}, Data:`, args);
+            Logger.info(`Committing Mutation: ${key}, Data:`, args);
 
             this.store.commit(key, args);
           }
         }
       }
     }
+  }
+
+  _validateRequest(data) {
+    Object.keys(data).forEach((key) => {
+      if (key !== this.encryptedKey) {
+        const error = new Error(
+          `Couldn't decrypt. Unacceptable request body sent. (${e.message})`
+        );
+        error.code = "ERR_BODY_ERROR";
+        throw error;
+      }
+    });
   }
 
   _decrypt(encrypted) {
