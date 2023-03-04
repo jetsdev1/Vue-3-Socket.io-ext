@@ -15,11 +15,11 @@ export default class VueSocketIO {
      * @param debug
      * @param options
      */
-    constructor({connection, vuex, debug, options, secret}){
+    constructor({connection, vuex, debug, options, secret, encryptedKey = 'msg'}){
 
         Logger.debug = debug;
         this.io = this.connect(connection, options);
-        this.emitter = new Emitter(vuex, secret);
+        this.emitter = new Emitter(vuex, secret, encryptedKey);
         this.listener = new Listener(this.io, this.emitter);
 
     }
