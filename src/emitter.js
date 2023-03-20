@@ -2,6 +2,29 @@ import CryptoJS from "crypto-js";
 import Logger from "./logger";
 
 export default class EventEmitter {
+  /**
+   * socket.io-client reserved event keywords
+   * @type {string[]}
+   */
+  static excludedEvents = [
+    "connect",
+    "connecting",
+    "connect_error",
+    "connect_timeout",
+    "reconnect",
+    "reconnect_attempt",
+    "reconnecting",
+    "reconnect_error",
+    "reconnect_failed",
+    "disconnect",
+    "disconnecting",
+    "error",
+    "newListener",
+    "removeListener",
+    "ping",
+    "pong",
+  ];
+
   constructor(vuex = {}, secret, encryptedKey) {
     Logger.info(vuex ? `Vuex adapter enabled` : `Vuex adapter disabled`);
     Logger.info(
@@ -67,11 +90,20 @@ export default class EventEmitter {
    */
   emit(event, args) {
     if (this.listeners.has(event)) {
-      if (this.secret !== undefined) {
+      if (
+        !EventEmitter.excludedEvents.includes(event) &&
+        this.secret !== undefined
+      ) {
         if (args !== undefined && typeof args === "object") {
-          this._validateRequest(args);
+          let bodyError = false;
+          Object.keys(args).forEach((key) => {
+            if (key !== this.encryptedKey) {
+              console.log("Couldn't decrypt. Unacceptable request body sent.");
+              bodyError = true;
+            }
+          });
 
-          if (Object.hasOwn(args, this.encryptedKey)) {
+          if (!bodyError && Object.hasOwn(args, this.encryptedKey)) {
             args = this._decrypt(args.msg);
           }
         }
@@ -124,18 +156,6 @@ export default class EventEmitter {
         }
       }
     }
-  }
-
-  _validateRequest(data) {
-    Object.keys(data).forEach((key) => {
-      if (key !== this.encryptedKey) {
-        const error = new Error(
-          `Couldn't decrypt. Unacceptable request body sent. (${e.message})`
-        );
-        error.code = "ERR_BODY_ERROR";
-        throw error;
-      }
-    });
   }
 
   _decrypt(encrypted) {
