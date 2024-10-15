@@ -1,7 +1,7 @@
 {
   "name": "vue-3-socket.io-ext",
   "author": "David Gurshumov <gurshumov.david@gmail.com>",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "socket.io implementation for Vue.js and Vuex",
   "main": "dist/vue-socketio.js",
   "scripts": {
@@ -30,7 +30,7 @@
   "homepage": "https://github.com/jetsdev1/Vue-3-Socket.io-ext",
   "dependencies": {
     "crypto-js": "^4.1.1",
-    "socket.io-client": "^4.5.1"
+    "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",
